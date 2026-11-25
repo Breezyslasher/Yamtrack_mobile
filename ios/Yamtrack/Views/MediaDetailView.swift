@@ -12,6 +12,7 @@ struct MediaDetailView: View {
     @State private var editingScore = false
     @State private var scoreText = ""
     @State private var confirmRemove = false
+    @State private var confirmWatchAgain = false
     @State private var cast: [CastMember] = []
     @State private var providers: WatchProviders?
     @State private var recommendations: [SearchResult] = []
@@ -74,6 +75,44 @@ struct MediaDetailView: View {
         .confirmationDialog("Remove from your library?", isPresented: $confirmRemove, titleVisibility: .visible) {
             Button("Remove", role: .destructive) { Task { await remove() } }
         }
+        .confirmationDialog("Add another \(againNoun) of \(details?.title ?? ref.title)?",
+                            isPresented: $confirmWatchAgain, titleVisibility: .visible) {
+            Button(againLabel) { Task { await watchAgain() } }
+        } message: {
+            Text("It's recorded as completed, finished now. The earlier one stays in your history.")
+        }
+    }
+
+    /// Tracked media other than tv (whose re-watches are per episode) can
+    /// be watched, read or played again.
+    private func canWatchAgain(_ d: MediaDetails) -> Bool {
+        d.tracked && ![MediaType.tv, .season, .episode].contains(ref.type)
+    }
+
+    private var againLabel: String {
+        switch ref.type {
+        case .book, .manga, .comic: return "Read again"
+        case .game, .boardgame: return "Play again"
+        default: return "Watch again"
+        }
+    }
+
+    private var againNoun: String {
+        switch ref.type {
+        case .book, .manga, .comic: return "read"
+        case .game, .boardgame: return "play"
+        default: return "watch"
+        }
+    }
+
+    private func watchAgainButton(_ d: MediaDetails) -> some View {
+        Button { confirmWatchAgain = true } label: {
+            Label(d.consumptionsNumber > 0 ? "\(againLabel) (\(d.consumptionsNumber) so far)" : againLabel,
+                  systemImage: "arrow.counterclockwise")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(Theme.accent)
     }
 
     @ViewBuilder
@@ -92,6 +131,7 @@ struct MediaDetailView: View {
                 if let providers { ProvidersSection(providers: providers, openURL: { openURL($0) }) }
                 if !seasons.isEmpty { seasonsSection }
                 if !cast.isEmpty { castSection }
+                if canWatchAgain(d) { watchAgainButton(d) }
                 if d.tracked {
                     Button(role: .destructive) { confirmRemove = true } label: {
                         Label("Remove from Library", systemImage: "trash").frame(maxWidth: .infinity)
@@ -362,6 +402,17 @@ struct MediaDetailView: View {
         }
     }
 
+    private func watchAgain() async {
+        guard let client = appState.client else { return }
+        do {
+            try await client.watchAgain(type: ref.type, source: ref.source, mediaId: ref.mediaId)
+            message = "Added to your history."
+        } catch {
+            message = error.localizedDescription
+        }
+        await load()
+    }
+
     private func remove() async {
         guard let client = appState.client else { return }
         await perform {
@@ -443,6 +494,26 @@ struct EpisodesView: View {
         .task(id: number) {
             if !hide, details[number] == nil { await loadDetail(number) }
         }
+        .contextMenu {
+            if episode.tracked {
+                Button { Task { await watchAgain(number: number) } } label: {
+                    Label("Watch again", systemImage: "arrow.counterclockwise")
+                }
+            }
+        }
+    }
+
+    /// Adds another watch of a watched episode (a re-watch), now.
+    private func watchAgain(number: Int) async {
+        guard let client = appState.client else { return }
+        do {
+            try await client.watchEpisodeAgain(source: ref.source, showId: ref.showId,
+                                               season: ref.season, episode: number)
+            message = "Episode \(number): another watch added."
+        } catch {
+            message = error.localizedDescription
+        }
+        await load()
     }
 
     private func load() async {

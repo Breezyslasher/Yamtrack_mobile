@@ -149,6 +149,24 @@ class MediaDetailsViewModel @Inject constructor(
         }
     }
 
+    private val _watchAgainResult = MutableLiveData<OperationResult>()
+    val watchAgainResult: LiveData<OperationResult> = _watchAgainResult
+
+    /** Records another completed watch / read / play, finished now. */
+    fun watchAgain() {
+        viewModelScope.launch {
+            val r = repository.watchAgain(currentMediaType, currentSource, currentMediaId)
+            _watchAgainResult.value = when (r) {
+                is Result.Success -> {
+                    loadDetails(currentMediaType, currentSource, currentMediaId)
+                    OperationResult.Success
+                }
+                is Result.Error -> OperationResult.Error(r.message)
+                else -> OperationResult.Error("Unknown error")
+            }
+        }
+    }
+
     /** Add with default Planning status (used by the explicit button). */
     fun addToLibrary() {
         viewModelScope.launch {

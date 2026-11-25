@@ -67,6 +67,26 @@ class EpisodesViewModel @Inject constructor(
         }
     }
 
+    /** Adds another watch of a watched episode (a re-watch), now. */
+    fun watchEpisodeAgain(episodeNumber: Int) {
+        viewModelScope.launch {
+            when (val r = repository.watchEpisodeAgain(source, mediaId, seasonNumber, episodeNumber)) {
+                is Result.Success -> {
+                    _toastRes.value = episodeNumber
+                    refresh()
+                }
+                is Result.Error -> _toast.value = r.message
+                else -> {}
+            }
+        }
+    }
+
+    /** The episode number whose re-watch was just added, for its message. */
+    private val _toastRes = MutableLiveData<Int?>()
+    val watchedAgain: LiveData<Int?> = _toastRes
+
+    fun watchedAgainShown() { _toastRes.value = null }
+
     fun toastShown() { _toast.value = null }
 
     suspend fun episodeDetail(episodeNumber: Int): MediaDetails? =

@@ -219,6 +219,39 @@ interface YamtrackApi {
         @Body request: UpdateMediaRequest
     ): Response<Unit>
 
+    /**
+     * Track a provider episode's first watch in one call: the server creates
+     * its season and show when needed (409 when already tracked). Older
+     * servers answer 400.
+     */
+    @POST("api/v1/media/episode/")
+    suspend fun trackProviderEpisode(@Body request: TrackEpisodeRequest): Response<Unit>
+
+    /**
+     * Add another consumption of a tracked media (not tv): a re-watch,
+     * re-read or re-play. 404 when it isn't tracked; 405 on older servers.
+     */
+    @POST("api/v1/media/{media_type}/{source}/{media_id}/history/")
+    suspend fun addMediaHistory(
+        @Path("media_type") mediaType: String,
+        @Path("source") source: String,
+        @Path("media_id") mediaId: String,
+        @Body request: WatchAgainRequest
+    ): Response<Unit>
+
+    /**
+     * Add another watch of an episode of a tracked season (a re-watch).
+     * 404 when the season isn't tracked; 405 on older servers.
+     */
+    @POST("api/v1/media/tv/{source}/{media_id}/{season_number}/{episode_number}/history/")
+    suspend fun addEpisodeHistory(
+        @Path("source") source: String,
+        @Path("media_id") mediaId: String,
+        @Path("season_number") seasonNumber: Int,
+        @Path("episode_number") episodeNumber: Int,
+        @Body request: WatchAgainRequest
+    ): Response<Unit>
+
     /** Untrack (mark unwatched) an episode. */
     @DELETE("api/v1/media/{media_type}/{source}/{media_id}/{season_number}/{episode_number}/")
     suspend fun deleteEpisode(

@@ -72,6 +72,7 @@ func sourceLabel(_ source: String?) -> String? {
     switch source {
     case "tmdb": return "TMDB"
     case "mal": return "MyAnimeList"
+    case "anilist": return "AniList"
     case "mangaupdates": return "MangaUpdates"
     case "igdb": return "IGDB"
     case "openlibrary": return "Open Library"
@@ -187,6 +188,8 @@ struct MediaDetails: Decodable {
     let details: [String: JSONValue]
     let tracked: Bool
     let consumptions: [HistoryEntry]
+    /// How many times it was watched / read / played (each consumption).
+    let consumptionsNumber: Int
     let timeToBeat: TimeToBeat?
     let lists: [ListMembership]
 
@@ -197,7 +200,7 @@ struct MediaDetails: Decodable {
 
     enum CodingKeys: String, CodingKey {
         case mediaId, source, mediaType, title, image, synopsis, genres, score, details, tracked, consumptions
-        case timeToBeat, lists
+        case timeToBeat, lists, consumptionsNumber
     }
 
     init(from decoder: Decoder) throws {
@@ -213,6 +216,7 @@ struct MediaDetails: Decodable {
         details = (try? c.decodeIfPresent([String: JSONValue].self, forKey: .details)) ?? [:]
         tracked = (try? c.decodeIfPresent(Bool.self, forKey: .tracked)) ?? false
         consumptions = (try? c.decodeIfPresent([HistoryEntry].self, forKey: .consumptions)) ?? []
+        consumptionsNumber = (try? c.decodeIfPresent(Int.self, forKey: .consumptionsNumber)) ?? consumptions.count
         timeToBeat = try? c.decodeIfPresent(TimeToBeat.self, forKey: .timeToBeat)
         lists = (try? c.decodeIfPresent([ListMembership].self, forKey: .lists)) ?? []
     }
@@ -276,6 +280,21 @@ struct TrackingUpdate: Encodable {
     var score: Double?
     var progress: Int?
     var endDate: String?
+}
+
+/// POST /api/v1/media/episode/: a provider episode's first watch. Newer
+/// servers create its season and show when they aren't tracked yet.
+struct EpisodeTracking: Encodable {
+    let mediaId: String
+    let source: String
+    let seasonNumber: Int
+    let episodeNumber: Int
+    let endDate: String
+}
+
+/// The history POSTs' body: another watch (re-watch, re-read, re-play).
+struct WatchAgain: Encodable {
+    let endDate: String
 }
 
 /// Any JSON value, for the provider-specific `details` object.

@@ -359,6 +359,22 @@
                     android:orientation="horizontal"
                     android:visibility="gone" />
 
+                <!-- Watch again: another completed watch / read / play -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnWatchAgain"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/watch_again"
+                    android:textAllCaps="false"
+                    android:textColor="@color/primary"
+                    android:visibility="gone"
+                    app:cornerRadius="8dp"
+                    app:icon="@drawable/ic_replay"
+                    app:iconTint="@color/primary"
+                    app:strokeColor="@color/primary" />
+
                 <!-- Remove Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRemove"

@@ -68,7 +68,8 @@ class EpisodesActivity : AppCompatActivity() {
             onWatchedToggled = { epNum, watched ->
                 viewModel.setEpisodeWatched(epNum, watched)
             },
-            onEpisodeClick = { epNum -> showWatchOptions(epNum) }
+            onEpisodeClick = { epNum -> showWatchOptions(epNum) },
+            onWatchAgain = { epNum -> confirmWatchAgain(epNum) }
         )
         binding.rvEpisodes.layoutManager = LinearLayoutManager(this)
         binding.rvEpisodes.adapter = adapter
@@ -77,6 +78,13 @@ class EpisodesActivity : AppCompatActivity() {
             if (msg != null) {
                 android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show()
                 viewModel.toastShown()
+            }
+        }
+
+        viewModel.watchedAgain.observe(this) { episode ->
+            if (episode != null) {
+                Toast.makeText(this, getString(R.string.episode_watched_again, episode), Toast.LENGTH_SHORT).show()
+                viewModel.watchedAgainShown()
             }
         }
 
@@ -122,6 +130,17 @@ class EpisodesActivity : AppCompatActivity() {
             .joinToString("\n")
             .takeIf { it.isNotBlank() }
         return EpisodesAdapter.EpisodeDetail(name = d.title, line = line)
+    }
+
+    /** Long-press on a watched episode: add another watch of it, now. */
+    private fun confirmWatchAgain(episode: Int) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.episode_watch_again_title, episode))
+            .setItems(arrayOf(getString(R.string.watch_again))) { _, _ ->
+                viewModel.watchEpisodeAgain(episode)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     /**
