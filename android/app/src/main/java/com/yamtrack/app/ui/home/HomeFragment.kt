@@ -63,9 +63,16 @@ class HomeFragment : Fragment() {
     private fun observeViewModel() {
         viewModel.recentByType.observe(viewLifecycleOwner) { groups ->
             renderGroups(binding.llRecentSections, groups)
-            binding.tvEmptyRecent.visibility =
-                if (groups.isEmpty()) View.VISIBLE else View.GONE
+            updateEmptyState()
         }
+
+        // A failed load says why, rather than looking like an empty library.
+        viewModel.error.observe(viewLifecycleOwner) { message ->
+            binding.llError.visibility = if (message != null) View.VISIBLE else View.GONE
+            binding.tvError.text = message
+            updateEmptyState()
+        }
+        binding.btnRetry.setOnClickListener { viewModel.loadData() }
 
         viewModel.planningByType.observe(viewLifecycleOwner) { groups ->
             renderGroups(binding.llPlanningSections, groups)
@@ -81,6 +88,13 @@ class HomeFragment : Fragment() {
             rebindRails(binding.llRecentSections)
             rebindRails(binding.llPlanningSections)
         }
+    }
+
+    /** "No media tracked yet" only when the load worked and found nothing. */
+    private fun updateEmptyState() {
+        val empty = viewModel.recentByType.value.isNullOrEmpty()
+        val failed = viewModel.error.value != null
+        binding.tvEmptyRecent.visibility = if (empty && !failed) View.VISIBLE else View.GONE
     }
 
     /** Long-press a card -> pick new artwork (episodes have no cover of their own). */

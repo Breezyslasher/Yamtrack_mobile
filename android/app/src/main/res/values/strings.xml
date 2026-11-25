@@ -145,6 +145,8 @@
     <string name="logout">Logout</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+    <string name="home_load_failed">Couldn\'t load your library</string>
+    <string name="retry">Retry</string>
     
     <!-- Settings -->
     <string name="dark_mode">Dark Mode</string>

@@ -738,7 +738,8 @@ class YamtrackRepository @Inject constructor(
         400 -> "Bad request."
         401 -> "Not authenticated. Please check your API token."
         403 -> "Forbidden. Your token may not have access to this resource."
-        404 -> "Not found. The server may not have API support enabled."
+        404 -> "Not found (HTTP 404). If this keeps happening, check the server " +
+            "address and that the server runs a Yamtrack version with the API."
         408 -> "Request timeout."
         409 -> "Conflict. This item already exists."
         429 -> "Too many requests. Please slow down."
