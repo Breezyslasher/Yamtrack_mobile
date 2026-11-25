@@ -340,8 +340,20 @@ class YamtrackRepository @Inject constructor(
         if (patched !is Result.Error) return Result.Error("Unknown error")
         if (patched.code != 404) return patched
 
-        // Not tracked yet: create it. Sent explicitly, as the server's default
-        // end_date is today's date only (midnight).
+        // Not tracked yet. Newer servers track a provider episode, and its
+        // season and show, in one call; 409 means it's already tracked.
+        val oneCall = apiCall {
+            api.trackProviderEpisode(
+                TrackEpisodeRequest(mediaId, source, seasonNumber, episodeNumber, watchedAt)
+            )
+        }
+        if (oneCall is Result.Success || (oneCall is Result.Error && oneCall.code == 409)) {
+            return Result.Success(Unit)
+        }
+        if (oneCall is Result.Error && oneCall.code == 401) return oneCall
+
+        // Older servers: create it under its season (and show). Sent
+        // explicitly, as the server's default end_date is today's date only.
         var created = trackEpisode(source, mediaId, seasonNumber, episodeNumber, watchedAt)
         if (created is Result.Error && created.code == 400) {
             // "Parent season is not tracked yet."
@@ -359,6 +371,38 @@ class YamtrackRepository @Inject constructor(
         }
         return created
     }
+
+    /** The time now, with its offset, for `end_date`. */
+    private fun nowTimestamp(): String =
+        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.US).format(java.util.Date())
+
+    /**
+     * Adds another completed watch (re-watch, re-read, re-play) of a tracked
+     * media, finished now. Not for tv: episodes are re-watched one by one.
+     */
+    suspend fun watchAgain(mediaType: MediaType, source: String, mediaId: String): Result<Unit> =
+        watchAgainResult(apiCall {
+            api.addMediaHistory(mediaType.value, source, mediaId, WatchAgainRequest(endDate = nowTimestamp()))
+        })
+
+    /** Adds another watch of an episode, now. Its season must be tracked. */
+    suspend fun watchEpisodeAgain(
+        source: String,
+        mediaId: String,
+        seasonNumber: Int,
+        episodeNumber: Int
+    ): Result<Unit> = watchAgainResult(apiCall {
+        api.addEpisodeHistory(source, mediaId, seasonNumber, episodeNumber, WatchAgainRequest(endDate = nowTimestamp()))
+    })
+
+    /** Explains a 405: the server predates the history POST endpoints. */
+    private fun watchAgainResult(result: Result<Unit>): Result<Unit> =
+        if (result is Result.Error && result.code == 405) {
+            Result.Error(
+                "This Yamtrack server can't add another watch yet. Update the server to use this.",
+                405
+            )
+        } else result
 
     private suspend fun trackEpisode(
         source: String,
@@ -694,7 +738,8 @@ class YamtrackRepository @Inject constructor(
         400 -> "Bad request."
         401 -> "Not authenticated. Please check your API token."
         403 -> "Forbidden. Your token may not have access to this resource."
-        404 -> "Not found. The server may not have API support enabled."
+        404 -> "Not found (HTTP 404). If this keeps happening, check the server " +
+            "address and that the server runs a Yamtrack version with the API."
         408 -> "Request timeout."
         409 -> "Conflict. This item already exists."
         429 -> "Too many requests. Please slow down."

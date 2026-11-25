@@ -338,6 +338,32 @@ class MediaDetailsActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * "Watch again" (Read / Play again by type) for tracked media other than
+     * tv, whose re-watches are per episode. Adds a completed consumption.
+     */
+    private fun bindWatchAgain(item: MediaDetails) {
+        val show = item.tracked && mediaType !in setOf(MediaType.TV, MediaType.SEASON, MediaType.EPISODE)
+        binding.btnWatchAgain.visibility = if (show) View.VISIBLE else View.GONE
+        if (!show) return
+        val (label, noun) = when (mediaType) {
+            MediaType.BOOK, MediaType.MANGA, MediaType.COMIC -> R.string.read_again to R.string.consumption_read
+            MediaType.GAME, MediaType.BOARDGAME -> R.string.play_again to R.string.consumption_play
+            else -> R.string.watch_again to R.string.consumption_watch
+        }
+        binding.btnWatchAgain.text = if (item.consumptionsNumber > 0) {
+            getString(R.string.consumption_count, getString(label), item.consumptionsNumber)
+        } else getString(label)
+        binding.btnWatchAgain.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.watch_again_confirm_title)
+                .setMessage(getString(R.string.watch_again_confirm, getString(noun), item.title.orEmpty()))
+                .setPositiveButton(R.string.add) { _, _ -> viewModel.watchAgain() }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
+    }
+
     private fun showScoreDialog() {
         val current = (viewModel.details.value as? Result.Success)?.data?.userScore
         val input = EditText(this).apply {
@@ -397,6 +423,14 @@ class MediaDetailsActivity : AppCompatActivity() {
                     Toast.makeText(this, opResult.message, Toast.LENGTH_LONG).show()
                 }
             }
+        }
+
+        viewModel.watchAgainResult.observe(this) { opResult ->
+            val text = when (opResult) {
+                is MediaDetailsViewModel.OperationResult.Success -> getString(R.string.watch_again_added)
+                is MediaDetailsViewModel.OperationResult.Error -> opResult.message
+            }
+            Toast.makeText(this, text, Toast.LENGTH_LONG).show()
         }
 
         viewModel.removeResult.observe(this) { opResult ->
@@ -470,6 +504,7 @@ class MediaDetailsActivity : AppCompatActivity() {
     }
 
     private fun displayDetails(item: MediaDetails) {
+        bindWatchAgain(item)
         binding.apply {
             val displayTitle = item.title.orEmpty()
             toolbar.title = displayTitle

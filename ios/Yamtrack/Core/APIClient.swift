@@ -188,6 +188,20 @@ final class APIClient {
         } catch let error as APIError where error.status == 404 {
             // Not tracked yet: create it below.
         }
+        // Newer servers track a provider episode, and its season and show,
+        // in one call (409: already tracked). Older ones refuse it.
+        do {
+            try await call("POST", "api/v1/media/episode/", body: EpisodeTracking(
+                mediaId: showId, source: source, seasonNumber: season, episodeNumber: episode,
+                endDate: now.endDate ?? ""))
+            return
+        } catch let error as APIError where error.status == 409 {
+            return
+        } catch let error as APIError where error.status == 401 {
+            throw error
+        } catch {
+            // An older server: create it under its season (and show) below.
+        }
         do {
             try await call("POST", episodePath, body: now)
         } catch let error as APIError where error.status == 400 {
@@ -197,6 +211,26 @@ final class APIClient {
         } catch let error as APIError where error.status == 405 {
             throw APIError(status: 405, message:
                 "This server can't create episode trackings. Update it, or mark the episode on the web first.")
+        }
+    }
+
+    /// Adds another completed watch / read / play of a tracked media (not tv),
+    /// finished now. The earlier ones stay in its history.
+    func watchAgain(type: MediaType, source: String, mediaId: String) async throws {
+        try await addHistory("api/v1/media/\(type.rawValue)/\(source)/\(mediaId)/history/")
+    }
+
+    /// Adds another watch of an episode, now. Its season must be tracked.
+    func watchEpisodeAgain(source: String, showId: String, season: Int, episode: Int) async throws {
+        try await addHistory("api/v1/media/tv/\(source)/\(showId)/\(season)/\(episode)/history/")
+    }
+
+    private func addHistory(_ path: String) async throws {
+        do {
+            try await call("POST", path, body: WatchAgain(endDate: ISO8601DateFormatter().string(from: Date())))
+        } catch let error as APIError where error.status == 405 {
+            throw APIError(status: 405, message:
+                "This Yamtrack server can't add another watch yet. Update the server to use this.")
         }
     }
 

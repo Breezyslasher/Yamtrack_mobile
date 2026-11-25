@@ -105,6 +105,19 @@
 
     <!-- Dialogs / toasts -->
     <string name="updated">Updated</string>
+    <string name="watch_again">Watch again</string>
+    <string name="read_again">Read again</string>
+    <string name="play_again">Play again</string>
+    <string name="watch_again_confirm_title">Add another watch?</string>
+    <string name="watch_again_confirm">This records another completed %1$s of %2$s, finished now. The earlier one stays in your history.</string>
+    <string name="consumption_watch">watch</string>
+    <string name="consumption_read">read</string>
+    <string name="consumption_play">play</string>
+    <string name="watch_again_added">Added to your history</string>
+    <string name="consumption_count">%1$s (%2$d so far)</string>
+    <string name="add">Add</string>
+    <string name="episode_watched_again">Episode %1$d: another watch added</string>
+    <string name="episode_watch_again_title">Episode %1$d</string>
     <string name="removed_from_library">Removed from library</string>
     <string name="remove_confirm_title">Remove from Library</string>
     <string name="remove_confirm_message">Are you sure you want to remove this from your library?</string>
@@ -132,6 +145,8 @@
     <string name="logout">Logout</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+    <string name="home_load_failed">Couldn\'t load your library</string>
+    <string name="retry">Retry</string>
     
     <!-- Settings -->
     <string name="dark_mode">Dark Mode</string>

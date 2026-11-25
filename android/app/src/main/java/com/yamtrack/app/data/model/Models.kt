@@ -80,6 +80,7 @@ enum class MediaStatus(val code: Int, val apiName: String, val displayName: Stri
 object Sources {
     const val TMDB = "tmdb"
     const val MAL = "mal"
+    const val ANILIST = "anilist"
     const val MANGAUPDATES = "mangaupdates"
     const val IGDB = "igdb"
     const val OPENLIBRARY = "openlibrary"
@@ -92,6 +93,7 @@ object Sources {
     fun label(source: String?): String? = when (source) {
         TMDB -> "TMDB"
         MAL -> "MyAnimeList"
+        ANILIST -> "AniList"
         MANGAUPDATES -> "MangaUpdates"
         IGDB -> "IGDB"
         OPENLIBRARY -> "Open Library"
@@ -572,6 +574,29 @@ data class AddMediaRequest(
     @Json(name = "score") val score: Double? = null,
     @Json(name = "progress") val progress: Int? = null,
     @Json(name = "start_date") val startDate: String? = null,
+    @Json(name = "end_date") val endDate: String? = null,
+    @Json(name = "notes") val notes: String? = null
+)
+
+/**
+ * Body for POST /api/v1/media/episode/: tracks a provider episode's first
+ * watch, creating its season and show when they aren't tracked yet (newer
+ * servers; older ones refuse provider episodes with 400).
+ */
+data class TrackEpisodeRequest(
+    @Json(name = "media_id") val mediaId: String,
+    @Json(name = "source") val source: String,
+    @Json(name = "season_number") val seasonNumber: Int,
+    @Json(name = "episode_number") val episodeNumber: Int,
+    @Json(name = "end_date") val endDate: String? = null
+)
+
+/**
+ * Body for the history POSTs (`…/history/`), which add another watch (a
+ * re-watch, re-read or re-play) rather than editing the existing one. For
+ * media the server defaults to Completed, finished now.
+ */
+data class WatchAgainRequest(
     @Json(name = "end_date") val endDate: String? = null,
     @Json(name = "notes") val notes: String? = null
 )

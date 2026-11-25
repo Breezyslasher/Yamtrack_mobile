@@ -33,7 +33,9 @@ class EpisodesAdapter(
     private val detailProvider: suspend (Int) -> EpisodeDetail?,
     private val onWatchedToggled: (episodeNumber: Int, watched: Boolean) -> Unit,
     /** Tapping an episode: where to watch it. */
-    private val onEpisodeClick: (episodeNumber: Int) -> Unit = {}
+    private val onEpisodeClick: (episodeNumber: Int) -> Unit = {},
+    /** Long-pressing a watched episode: add another watch of it. */
+    private val onWatchAgain: (episodeNumber: Int) -> Unit = {}
 ) : ListAdapter<MediaItem, EpisodesAdapter.VH>(Diff()) {
 
     /** [name] is the episode's own title; [line] the date/length/description. */
@@ -65,6 +67,12 @@ class EpisodesAdapter(
             binding.ivThumb.contentDescription = binding.tvTitle.text
 
             binding.root.setOnClickListener { onEpisodeClick(epNum) }
+            if (ep.tracked) {
+                binding.root.setOnLongClickListener { onWatchAgain(epNum); true }
+            } else {
+                binding.root.setOnLongClickListener(null)
+                binding.root.isLongClickable = false
+            }
 
             binding.cbWatched.setOnCheckedChangeListener(null)
             binding.cbWatched.isChecked = ep.tracked
